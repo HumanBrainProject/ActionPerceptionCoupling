@@ -409,7 +409,7 @@ end
 % Threshold = 0.35;
 % % Threshold = 0.45;
 % WinSize = 10;                                       %%% Detection window size
-% [sumSignal,detectionrate] = DetectionRate(A_fnl_Vsn,WinSize,Threshold,NoiseSD);
+% [sumSignal,detectionrate] = DetectionRate(A_fnl_Vsn,WinSize,Threshold,NoiseSD,VM_delay);
 % detectionrate = sum(A_fnl_Vsn(:)>Threshold);
 % % plot(sum(A_fnl_Vsn>Threshold))
 %% figures are here:
