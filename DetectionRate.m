@@ -10,7 +10,7 @@ visual activity is above a defined threshold
 %}
 
 
-function [Detections, DetectionRate] = DetectionRate(VsnOutput, WinSize, Threshold,SNR)
+function [Detections, DetectionRate] = DetectionRate(VsnOutput, WinSize, Threshold,SNR,delay)
 
 % keyboard
 DetectedSignal = VsnOutput > Threshold ;
@@ -24,7 +24,7 @@ for i = 1:WinSize:length(VsnOutput)- WinSize
 end
 plot(DR);
 ylim([-0.1,1.1]);
-DetectionRate = (sum(DR==1)/length(DR))*100;
+DetectionRate = (sum(DR==1)/(length(DR)-delay))*100;
 
 % DetectionRate = (Detections/sum(sum(Signal)))*100;
 % title(['motion recognition rate[Baseline] = ',num2str(DetectionRate),'%',' with \bf(\sigma) = ',num2str(SNR)]);
