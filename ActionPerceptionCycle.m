@@ -1,7 +1,7 @@
 %{
 Author : Mohammad Hovaidi Ardestani
 Date and Place: 22.08.2015, CIN, Tuebingen, Germany
-the last modification date : 29.01.2016
+the last modification date : 02.01.2016
 .
 .
 .
@@ -18,7 +18,7 @@ close all
 
 %%% Simulation Time Settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 dt = 1e-3;                                 % time step
-Time = 2;                                  % simulation time
+Time = 1;                                  % simulation time
 T = dt:dt:Time;                            % time step vector   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
 %%% Synaptic current related parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +90,7 @@ gama_Vsn = 10;     alpha_Vsn = .2;      C_Vsn =.7;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 % SNR = .4;                            % Signal to Noise Ratio
-NoiseSD = .8;
+% NoiseSD = .8;
 %% Coupling neurons inter and intra fields %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% W : weight matrix of synaptic connections strength within each ensemble
 %%% WW : lateral connection kernel used in each neural field
@@ -122,8 +122,8 @@ W_Vsn(1:N_Vsn+1:N_Vsn*N_Vsn) = 0;      % No neuron can have effect on itself
 WW_Mtr = AsymmetricCouplingMotor(NN_Mtr, gama_Mtr, alpha_Mtr, C_Mtr);
 WW_Vsn = AsymmetricCouplingVision(NN_Vsn, gama_Vsn, alpha_Vsn, C_Vsn);
 
-WWW_Mtr = MotorFilter(NN_Mtr, gama_Mtr, alpha_Mtr, C_Mtr);
-WWW_Vsn = VisionFilter(NN_Vsn,  gama_Vsn, alpha_Vsn, C_Vsn);
+WWW_Mtr = MtrToVsnKernel(NN_Mtr, gama_Mtr, alpha_Mtr, C_Mtr);
+WWW_Vsn = VsnToMtrKernel(NN_Vsn, gama_Vsn, alpha_Vsn, C_Vsn);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% memory allocation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Population Activity %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -186,10 +186,10 @@ FiringNeurons_e_Vsn = zeros(NN_Vsn,length(T));
 FiringNeurons_i_Vsn = zeros(NN_Vsn,length(T));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 %%%%%%%%%%%%%% Stimuli settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-VM_delay = 560;             % Delay that defines the Ascunchronisity between vision and  motor simuli
-% VM_delay = 280;
-% VM_delay = 0;
-delay = 0;                  % Delay that works for the other expermints.
+% VM_delay = 0;               % Delay that defines the Ascunchronisity between vision and  motor simuli
+VM_delay = 280;
+% VM_delay = 560;
+% delay = 0;                  % Delay that works for the other experiments.
 ST_v = 1;                   % Visiual Stimulus starting time
 Sf = 30e-9;                 % Stimulus_factor of strength
 %%%%%%%%%%%%%% Waiting bar settings %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,9 +220,8 @@ for t = 2:length(T)
         
         
         %%% External Stimulus %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-        Stimulus_Mtr = Sf*TravelingBumpMtr(NN_Mtr,1,ST_v,delay);
-%         Stimulus_Mtr = 50e-9*Input_Mtr(NN_Mtr,7,1);
-%         Stimulus_Vsn = Sf*TravelingBumpVsn(NN_Vsn,1,ST_v);  
+        Stimulus_Mtr = Sf*MtrInput(NN_Mtr,1,ST_v);
+%         Stimulus_Vsn = Sf*VsnInput(NN_Vsn,1,ST_v);  
         %%% add noise to external Stimulus
 %         Stimulus_Vsn = sf*NoisyInputVsn(NN_Vsn,1,NoiseSD);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -249,9 +248,9 @@ for t = 2:length(T)
 %             PoId = PoId - NN_Mtr;
 %         end
         if (t > VM_delay)
-          I_ext_Vsn(EnId,1:N_e_Vsn,t) = I_MtrToVsn(EnId,1:N_e_Vsn,t - VM_delay);
-          %%% add noise to external Stimulus(This part should be evolved, this is just for test)
-          I_ext_Vsn(EnId,1:N_e_Vsn,t) = I_ext_Vsn(EnId,1:N_e_Vsn,t) + (mean(I_ext_Vsn(:))*randn(1)); 
+           I_ext_Vsn(EnId,1:N_e_Vsn,t) = 1e-3*I_MtrToVsn(EnId,1:N_e_Vsn,t - VM_delay);
+          %%% add noise to external Stimulus(This part should be evolved)
+%           I_ext_Vsn(EnId,1:N_e_Vsn,t) = I_ext_Vsn(EnId,1:N_e_Vsn,t) + (mean(I_ext_Vsn(:))*randn(1)); 
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% Synaptic Current calculation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
@@ -277,8 +276,8 @@ for t = 2:length(T)
         w_Mtr(EnId,:,t) = w_Mtr(EnId,:,t-1) + (dt/tau_w_Mtr)*(a_s_Mtr.*(v_Mtr(EnId,:,t)-E_L_Mtr) - w_Mtr(EnId,:,t)); 
         %%% Vision Field %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
         v_Vsn(EnId,:,t) = v_Vsn(EnId,:,t-1) + (dt/C_m_Vsn)*(g_L_Vsn*(E_L_Vsn-v_Vsn(EnId,:,t-1)) + g_L_Vsn*Delta_T_Vsn*exp((v_Vsn(EnId,:,t-1) - V_T_Vsn)/Delta_T_Vsn) - w_Vsn(EnId,:,t-1) ...
-        + I_ext_Vsn(EnId,:,t) + I_syn_e_Vsn(EnId,:,t-1) + I_syn_i_Vsn(EnId,:,t-1) + I_Field_Vsn(EnId,:,t)) + I_MtrToVsn(EnId,:,t) ;
-        %%% 
+        + I_ext_Vsn(EnId,:,t) + I_syn_e_Vsn(EnId,:,t-1) + I_syn_i_Vsn(EnId,:,t-1) + I_Field_Vsn(EnId,:,t)) + I_MtrToVsn(EnId,:,t);
+        %%%  
         w_Vsn(EnId,:,t) = w_Vsn(EnId,:,t-1) + (dt/tau_w_Vsn)*(a_s_Vsn.*(v_Vsn(EnId,:,t)-E_L_Vsn) - w_Vsn(EnId,:,t-1));
         %%%%%%%%%%%%%%%% When a neuron spikes!!! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         Fired_Mtr = find(v_Mtr(EnId,:,t) > V_peak_Mtr);
@@ -343,43 +342,43 @@ for t = 2:length(T)
 end    
 %%   Gaussian Filter
 sigma = 10;
-size = 100;
+G_size = 100;
 mu = 0;
 for EnId = 1:NN_Mtr
     
 %     A_fnl_Mtr(EnId,:) = conv (A_Mtr(EnId,:), GaussianFilter(mu,sigma,size), 'same');
-A_fnl_Mtr(EnId,:) = conv (A_Mtr(EnId,:), GaussianFilter(sigma,size), 'same');
+A_fnl_Mtr(EnId,:) = conv (A_Mtr(EnId,:), GaussianFilter(sigma,G_size), 'same');
 %     A_fnl_Vsn(EnId,:) = conv (A_Vsn(EnId,:), GaussianFilter(mu,sigma,size), 'same');
-A_fnl_Vsn(EnId,:) = conv (A_Vsn(EnId,:), GaussianFilter(sigma,size), 'same');
+A_fnl_Vsn(EnId,:) = conv (A_Vsn(EnId,:), GaussianFilter(sigma,G_size), 'same');
        
 end
 
 close(h)
 %% Capture the video here :
-% MaxActivity = 5*N_i_Mtr/100;
-% nframe=t;
-% mov(1:nframe)= struct('cdata',[],'colormap',[]);
-% set(gca,'nextplot','replacechildren')
-% for k = 1:nframe
-% 
-%     plot(A_fnl_Vsn(:,k),'b','LineWidth',2.5)
-%     legend('Vision','Location','northeast')
-%     ylim([0,MaxActivity]);
-%     hold on
-%     plot(A_fnl_Mtr(:,k),'r','LineWidth',2.5)
-%     ylim([0,MaxActivity]);
-%     hold off
-%     legend('Visual activity','Motor activity','Location','northeast')
-%     ylim([0,MaxActivity]);
-%     title(['Time = ',num2str(k),'  (ms)']);
-%     ylabel('Neural Field Activity')
-%     xlabel('Ensemble Number')
-%     mov(k)= getframe(gcf);
-%   
-% end
-% %  movie2avi(mov, 'C:\Users\Mohammad\Desktop\Sync.avi', 'compression', 'None');
+MaxActivity = 5*N_i_Mtr/100;
+nframe=t;
+mov(1:nframe)= struct('cdata',[],'colormap',[]);
+set(gca,'nextplot','replacechildren')
+for k = 1:nframe
+
+    plot(A_fnl_Vsn(:,k),'b','LineWidth',2.5)
+    legend('Vision','Location','northeast')
+    ylim([0,MaxActivity]);
+    hold on
+    plot(A_fnl_Mtr(:,k),'r','LineWidth',2.5)
+    ylim([0,MaxActivity]);
+    hold off
+    legend('Visual activity','Motor activity','Location','northeast')
+    ylim([0,MaxActivity]);
+    title(['Time = ',num2str(k),'  (ms)']);
+    ylabel('Neural Field Activity')
+    xlabel('Ensemble Number')
+    mov(k)= getframe(gcf);
+  
+end
+%  movie2avi(mov, 'C:\Users\Mohammad\Desktop\Sync.avi', 'compression', 'None');
 % movie2avi(mov, 'C:\Users\Mohammad\Desktop\test.avi', 'compression', 'None');
-% %  movie2avi(mov, 'C:\Users\Mohammad\Desktop\Delay.avi', 'compression', 'None');
+%  movie2avi(mov, 'C:\Users\Mohammad\Desktop\Delay1.avi', 'compression', 'None');
 %% Population codes :
 % PHI_Vsn = zeros(1,length(T));
 % PHI_Mtr = zeros(1,length(T));
@@ -407,7 +406,7 @@ close(h)
 % hold off
 %% Action Detection :
 % Noise should be added at the output, also calculation analytically. 
-Threshold = 0.40;
+Threshold = 0.45;
 % Threshold = 0.45;
 WinSize = 10;                                       %%% Detection window size
 [sumSignal,detectionrate] = DetectionRate(A_fnl_Vsn,WinSize,Threshold,NoiseSD,VM_delay);
