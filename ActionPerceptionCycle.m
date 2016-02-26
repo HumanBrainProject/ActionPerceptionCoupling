@@ -90,7 +90,7 @@ gama_Vsn = 10;     alpha_Vsn = .2;      C_Vsn =.7;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 % SNR = .4;                            % Signal to Noise Ratio
-% NoiseSD = .8;
+NoiseSD = .8;
 %% Coupling neurons inter and intra fields %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% W : weight matrix of synaptic connections strength within each ensemble
 %%% WW : lateral connection kernel used in each neural field
@@ -226,7 +226,7 @@ for t = 2:length(T)
 %         Stimulus_Vsn = sf*NoisyInputVsn(NN_Vsn,1,NoiseSD);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         I_ext_Mtr(EnId,1:N_e_Mtr,t) = repmat(Stimulus_Mtr(EnId,t),N_e_Mtr,1);
-%         I_ext_Mtr(EnId,1:N_e_Vsn,t) = 0; %Baseline  
+%         I_ext_Mtr(EnId,1:N_e_Vsn,t) = 0; %Baseline: Vsn stimulus is based on recorded movements(Mtr field activity) from previous trials.
 %         I_ext_Vsn(EnId,1:N_e_Vsn,t) = repmat(Stimulus_Vsn(EnId,t),N_e_Vsn,1);
           %%% In case of seperated visual stimulus needed.
         %%% add noise to external Stimulus
@@ -250,7 +250,9 @@ for t = 2:length(T)
         if (t > VM_delay)
            I_ext_Vsn(EnId,1:N_e_Vsn,t) = 1e-3*I_MtrToVsn(EnId,1:N_e_Vsn,t - VM_delay);
           %%% add noise to external Stimulus(This part should be evolved)
-%           I_ext_Vsn(EnId,1:N_e_Vsn,t) = I_ext_Vsn(EnId,1:N_e_Vsn,t) + (mean(I_ext_Vsn(:))*randn(1)); 
+%           AddingNoise = mean(I_ext_Vsn(:)) + (sqrt(NoiseSD).*randn(1)); 
+%           I_ext_Vsn(EnId,1:N_e_Vsn,t) = I_ext_Vsn(EnId,1:N_e_Vsn,t) + AddingNoise; 
+%           I_ext_Vsn(EnId,1:N_e_Vsn,t) = awgn(I_ext_Vsn(EnId,1:N_e_Vsn,t),100);
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%% Synaptic Current calculation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
@@ -406,7 +408,7 @@ end
 % hold off
 %% Action Detection :
 % Noise should be added at the output, also calculation analytically. 
-Threshold = 0.45;
+Threshold = 0.3;
 % Threshold = 0.45;
 WinSize = 10;                                       %%% Detection window size
 [sumSignal,detectionrate] = DetectionRate(A_fnl_Vsn,WinSize,Threshold,NoiseSD,VM_delay);
