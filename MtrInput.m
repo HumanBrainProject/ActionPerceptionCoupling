@@ -12,7 +12,7 @@ This function returns a travelling pulse used as the external motor stimulus.
 
 function GaussianInput = MtrInput(M_size,sigma1,ST_v)
 dt = 1e-3;                             % time step
-Time = 2;                              % simulation time
+Time = 1;                              % simulation time
 T = 0:dt:Time;                         % time step vector
 % ST_m = ST_v + delay;                   % Defines the time when stimulus shown
 ST_m = ST_v;
