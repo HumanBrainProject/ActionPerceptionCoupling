@@ -3,7 +3,7 @@
 # To be evolved :
 # This code will be used as the main core of the model implemented in NEST. 
 # Due to some restrictions of NEST the whole design implemented already in MATLAB
-# is not transferable to NEST.
+# has not been yet transfered to NEST.
 
 
 # -*- coding: utf-8 -*-
